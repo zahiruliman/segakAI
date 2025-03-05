@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/ui/navbar";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/toaster";
 import { ServiceWorkerRegistration } from "./sw-register";
+import { ThemeProvider } from "@/components/theme-provider";
+import { NavbarWrapper } from "@/components/navbar-wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,6 +15,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
   subsets: ["latin"],
 });
 
@@ -33,18 +41,43 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+// Script to prevent theme flash
+const themeScript = `
+  (function() {
+    function getThemePreference() {
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('segakai-theme')) {
+        return localStorage.getItem('segakai-theme');
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    
+    const theme = getThemePreference();
+    
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme === 'system' 
+      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : theme
+    );
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${interTight.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-screen font-sans antialiased flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex flex-col">{children}</main>
-        <Toaster position="top-center" closeButton richColors />
-        <ServiceWorkerRegistration />
+        <ThemeProvider defaultTheme="system" storageKey="segakai-theme">
+          <NavbarWrapper />
+          <main className="flex-1 flex flex-col">{children}</main>
+          <Toaster />
+          <ServiceWorkerRegistration />
+        </ThemeProvider>
       </body>
     </html>
   );

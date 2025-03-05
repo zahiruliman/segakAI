@@ -28,7 +28,7 @@ export default function AdminPage() {
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({});
   const [updatedValues, setUpdatedValues] = useState<Record<string, string>>({});
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState<boolean | string>(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function AdminPage() {
 
   const saveConfig = async (key: string) => {
     try {
-      setIsSaving(true);
+      setIsSaving(key);
       
       // Update the config directly using Supabase
       const { error } = await supabase
@@ -138,7 +138,7 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-10 space-y-6">
+      <div className="container py-8 md:py-12 mt-16">
         <h1 className="text-3xl font-bold">Admin Settings</h1>
         <Separator />
         <div className="grid gap-6">
@@ -163,71 +163,75 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto py-10 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Admin Settings</h1>
-        <Button onClick={() => router.push("/dashboard")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Dashboard
+    <div className="container py-8 md:py-12 mt-16">
+      <div className="flex items-center gap-2 mb-6">
+        <Button variant="outline" size="icon" onClick={() => router.push("/dashboard")}>
+          <ArrowLeft className="h-4 w-4" />
         </Button>
+        <h1 className="text-3xl font-bold tracking-tight">Admin Settings</h1>
       </div>
       
-      <Separator />
-
-      <div className="grid gap-6">
-        {configs.map((config) => (
-          <Card key={config.id} className="overflow-hidden">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{config.key}</CardTitle>
-                  <CardDescription>{config.description}</CardDescription>
-                </div>
-                {config.is_secret && (
-                  <Lock className="h-5 w-5 text-muted-foreground" />
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid w-full items-center gap-1.5">
-                <Label htmlFor={`config-${config.key}`}>Value</Label>
-                <div className="flex w-full max-w-sm items-center space-x-2">
-                  <div className="relative w-full">
-                    <Input
-                      id={`config-${config.key}`}
-                      type={config.is_secret && !showSecret[config.key] ? "password" : "text"}
-                      value={updatedValues[config.key] || ""}
-                      onChange={(e) => handleValueChange(config.key, e.target.value)}
-                      className="pr-10"
-                    />
-                    {config.is_secret && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-0 top-0 h-10 w-10"
-                        onClick={() => toggleShowSecret(config.key)}
-                      >
-                        {showSecret[config.key] ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
+      <div className="md:rounded-xl rounded-none md:border border-x-0 md:shadow-sm overflow-hidden p-4 md:p-6">
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold">Application Configuration</h2>
+            <p className="text-muted-foreground">Manage your application settings and API keys.</p>
+          </div>
+          
+          <Separator />
+          
+          <div className="space-y-6">
+            {configs.map((config) => (
+              <div key={config.key} className="space-y-2">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+                  <div>
+                    <Label htmlFor={config.key} className="text-base font-medium">
+                      {config.key}
+                    </Label>
+                    <p className="text-sm text-muted-foreground">{config.description}</p>
                   </div>
-                  <Button
-                    onClick={() => saveConfig(config.key)}
-                    disabled={isSaving}
+                  {config.is_secret && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => toggleShowSecret(config.key)}
+                      className="md:self-start"
+                    >
+                      {showSecret[config.key] ? (
+                        <EyeOff className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Eye className="h-4 w-4 mr-2" />
+                      )}
+                      {showSecret[config.key] ? "Hide" : "Show"}
+                    </Button>
+                  )}
+                </div>
+                
+                <div className="flex flex-col md:flex-row gap-2">
+                  <Input
+                    id={config.key}
+                    type={config.is_secret && !showSecret[config.key] ? "password" : "text"}
+                    value={updatedValues[config.key] !== undefined ? updatedValues[config.key] : config.value}
+                    onChange={(e) => handleValueChange(config.key, e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={() => saveConfig(config.key)} 
+                    disabled={isSaving === config.key || updatedValues[config.key] === undefined}
+                    className="flex items-center gap-2"
                   >
-                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving === config.key ? (
+                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
                     Save
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

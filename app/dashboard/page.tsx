@@ -216,7 +216,7 @@ export default function DashboardPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="container py-8 md:py-12"
+        className="container py-8 md:py-12 mt-16"
       >
         <div className="flex flex-col md:flex-row items-start justify-between mb-8">
           <div>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
           </div>
           <Button 
             onClick={handleCreateNewPlan}
-            className="mt-4 md:mt-0 flex items-center gap-2"
+            className="mt-4 md:mt-0 w-full md:w-auto flex items-center justify-center gap-2"
           >
             <PlusCircle className="h-4 w-4" />
             Create New Plan
@@ -241,185 +241,151 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
+            className="md:rounded-xl rounded-none md:border border-x-0 md:shadow-sm overflow-hidden"
           >
-            <Card className="border-dashed border-2 p-8">
+            <Card className="border-dashed md:border-2 border-0 p-8 md:rounded-xl rounded-none">
               <div className="flex flex-col items-center justify-center text-center space-y-6 py-12">
                 <div className="bg-primary/10 p-3 rounded-full">
                   <Activity className="h-8 w-8 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold">Create Your First Plan</h2>
+                  <h2 className="text-2xl font-bold">No Plans Yet</h2>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    Get started with a personalized workout and diet plan tailored to your specific goals and lifestyle.
+                    Create your first personalized fitness and diet plan by answering a few questions about your goals and preferences.
                   </p>
                 </div>
                 <Button 
                   onClick={handleCreateNewPlan}
-                  size="lg"
                   className="mt-2 flex items-center gap-2"
+                  size="lg"
                 >
-                  Get Started
-                  <ChevronRight className="h-4 w-4" />
+                  <PlusCircle className="h-4 w-4" />
+                  Create Your First Plan
                 </Button>
               </div>
             </Card>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <motion.div 
-              className="lg:col-span-4 space-y-4"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <h2 className="text-xl font-semibold">Your Plans</h2>
-              <div className="space-y-3">
-                {plans.map((plan) => (
-                  <motion.div
-                    key={plan.id}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                  >
-                    <Card 
-                      className={`cursor-pointer transition-colors ${selectedPlan?.id === plan.id ? 'border-primary bg-primary/5' : ''}`}
-                      onClick={() => setSelectedPlan(plan)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="font-medium">{formatDate(plan.created_at)}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {plan.plan_data?.workoutPlan?.goal || "Custom Plan"}
-                            </p>
-                          </div>
-                          {selectedPlan?.id === plan.id && <ChevronRight className="h-4 w-4 text-primary" />}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 flex items-center gap-2"
-                onClick={handleCreateNewPlan}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Create New Plan
-              </Button>
-            </motion.div>
-
-            {selectedPlan && (
-              <motion.div 
-                className="lg:col-span-8"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle>Plan Details</CardTitle>
-                        <CardDescription>Created on {formatDate(selectedPlan.created_at)}</CardDescription>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="md:rounded-xl rounded-none md:border border-x-0 md:shadow-sm overflow-hidden">
+              <Tabs defaultValue="workout" className="w-full">
+                <div className="bg-muted/50 px-4 py-2 md:rounded-t-xl sticky top-[57px] z-10 backdrop-blur">
+                  <TabsList className="w-full md:w-auto grid grid-cols-2 h-auto p-1 bg-muted/50">
+                    <TabsTrigger value="workout" className="py-2 rounded-md data-[state=active]:bg-background">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        <span>Workout Plan</span>
                       </div>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                    </TabsTrigger>
+                    <TabsTrigger value="diet" className="py-2 rounded-md data-[state=active]:bg-background">
+                      <div className="flex items-center gap-2">
+                        <Utensils className="h-4 w-4" />
+                        <span>Diet Plan</span>
+                      </div>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                
+                <TabsContent value="workout" className="p-4 md:p-6 focus-visible:outline-none focus-visible:ring-0">
+                  {selectedPlan && (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-2xl font-bold">{selectedPlan.title || "Your Workout Plan"}</h2>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(selectedPlan.created_at)}
+                          </p>
+                        </div>
+                        <p className="text-muted-foreground">{selectedPlan.description || "Personalized workout plan based on your goals and preferences."}</p>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div className="space-y-4">
+                        {selectedPlan.workout_plan ? (
+                          <div dangerouslySetInnerHTML={{ __html: selectedPlan.workout_plan }} />
+                        ) : (
+                          <p>No workout plan available.</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                        <Button variant="outline" className="flex items-center gap-2">
                           <FileDown className="h-4 w-4" />
-                          <span className="hidden sm:inline">Download</span>
+                          Download PDF
                         </Button>
-                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                        <Button variant="outline" className="flex items-center gap-2">
                           <Share2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">Share</span>
+                          Share Plan
                         </Button>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <Tabs defaultValue="workout">
-                      <TabsList className="mb-4">
-                        <TabsTrigger value="workout" className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          Workout Plan
-                        </TabsTrigger>
-                        <TabsTrigger value="diet" className="flex items-center gap-1">
-                          <Utensils className="h-4 w-4" />
-                          Diet Plan
-                        </TabsTrigger>
-                        <TabsTrigger value="recommendations">
-                          Recommendations
-                        </TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="workout" className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-medium mb-2">Goal</h3>
-                          <p>{selectedPlan.plan_data?.workoutPlan?.goal || "No specific goal defined"}</p>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="diet" className="p-4 md:p-6 focus-visible:outline-none focus-visible:ring-0">
+                  {selectedPlan && (
+                    <div className="space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h2 className="text-2xl font-bold">Your Diet Plan</h2>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDate(selectedPlan.created_at)}
+                          </p>
                         </div>
-                        <Separator />
-                        <div>
-                          <h3 className="text-lg font-medium mb-2">Weekly Schedule</h3>
-                          <div className="space-y-4">
-                            {selectedPlan.plan_data?.workoutPlan?.weeklySchedule ? (
-                              Object.entries(selectedPlan.plan_data.workoutPlan.weeklySchedule).map(([day, exercises]: [string, any]) => (
-                                <div key={day} className="rounded-md border p-4">
-                                  <h4 className="font-medium capitalize mb-2">{day}</h4>
-                                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                                    {Array.isArray(exercises) ? (
-                                      exercises.map((exercise: string, i: number) => (
-                                        <li key={i}>{exercise}</li>
-                                      ))
-                                    ) : (
-                                      <li>{exercises}</li>
-                                    )}
-                                  </ul>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted-foreground">No weekly schedule provided</p>
-                            )}
-                          </div>
-                        </div>
-                      </TabsContent>
-                      <TabsContent value="diet" className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-medium mb-2">Approach</h3>
-                          <p>{selectedPlan.plan_data?.dietPlan?.approach || "No specific approach defined"}</p>
-                        </div>
-                        <Separator />
-                        <div>
-                          <h3 className="text-lg font-medium mb-2">Daily Meals</h3>
-                          <div className="space-y-4">
-                            {selectedPlan.plan_data?.dietPlan?.meals ? (
-                              Object.entries(selectedPlan.plan_data.dietPlan.meals).map(([meal, description]: [string, any]) => (
-                                <div key={meal} className="rounded-md border p-4">
-                                  <h4 className="font-medium capitalize mb-2">{meal}</h4>
-                                  <p className="text-muted-foreground">{description}</p>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted-foreground">No meal plan provided</p>
-                            )}
-                          </div>
-                        </div>
-                      </TabsContent>
-                      <TabsContent value="recommendations" className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-medium mb-2">Additional Recommendations</h3>
-                          {selectedPlan.plan_data?.recommendations ? (
-                            <ul className="list-disc list-inside space-y-3 pl-2">
-                              {selectedPlan.plan_data.recommendations.map((rec: string, i: number) => (
-                                <li key={i} className="text-muted-foreground">{rec}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <p className="text-muted-foreground">No additional recommendations provided</p>
-                          )}
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </CardContent>
-                </Card>
-              </motion.div>
+                        <p className="text-muted-foreground">Personalized nutrition plan based on your goals and preferences.</p>
+                      </div>
+                      
+                      <Separator />
+                      
+                      <div className="space-y-4">
+                        {selectedPlan.diet_plan ? (
+                          <div dangerouslySetInnerHTML={{ __html: selectedPlan.diet_plan }} />
+                        ) : (
+                          <p>No diet plan available.</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <FileDown className="h-4 w-4" />
+                          Download PDF
+                        </Button>
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <Share2 className="h-4 w-4" />
+                          Share Plan
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+            
+            {plans.length > 1 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Previous Plans</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {plans.slice(1).map((plan) => (
+                    <Card key={plan.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <CardHeader className="p-4">
+                        <CardTitle className="text-lg">{plan.title || "Fitness Plan"}</CardTitle>
+                        <CardDescription>{formatDate(plan.created_at)}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        <Button 
+                          variant="ghost" 
+                          className="w-full justify-between"
+                          onClick={() => setSelectedPlan(plan)}
+                        >
+                          View Details
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )}
