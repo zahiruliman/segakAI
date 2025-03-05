@@ -1,4 +1,4 @@
-// Initialize Supabase Database Script
+// Simple Supabase Database Initialization Script
 // This script reads the schema SQL file and executes it against your Supabase database
 
 const fs = require('fs');
@@ -25,66 +25,32 @@ async function initializeDatabase() {
     
     console.log('Executing SQL schema...');
     
-    // Split the SQL into individual statements
-    const statements = schemaSQL
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt.length > 0);
+    // Extract project reference from the URL
+    const projectRef = new URL(supabaseUrl).hostname.split('.')[0];
     
-    console.log(`Found ${statements.length} SQL statements to execute`);
-    
-    // Execute each statement separately
-    for (let i = 0; i < statements.length; i++) {
-      const stmt = statements[i];
-      console.log(`Executing statement ${i + 1}/${statements.length}...`);
-      
-      try {
-        // Execute the SQL statement
-        await fetch(`${supabaseUrl}/rest/v1/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Prefer': 'params=single-object'
-          },
-          body: JSON.stringify({
-            query: stmt + ';'
-          })
-        });
-      } catch (error) {
-        console.warn(`Warning: Statement ${i + 1} execution error:`, error.message);
-        // Continue with next statement
-      }
-    }
-    
-    console.log('✅ Database initialized successfully!');
-    
-    // List tables to verify
-    console.log('\nVerifying tables...');
-    const tablesResponse = await fetch(`${supabaseUrl}/rest/v1/`, {
+    // Execute the SQL using the Supabase REST API
+    const response = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/sql`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': supabaseKey,
         'Authorization': `Bearer ${supabaseKey}`,
-        'Prefer': 'params=single-object'
+        'apikey': supabaseKey
       },
-      body: JSON.stringify({
-        query: "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
-      })
+      body: JSON.stringify({ query: schemaSQL })
     });
     
-    const tablesData = await tablesResponse.json();
-    
-    if (tablesData && tablesData.length > 0) {
-      console.log('\nTables in public schema:');
-      tablesData.forEach(table => {
-        console.log(`- ${table.table_name}`);
-      });
-    } else {
-      console.log('No tables found or could not verify tables.');
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to execute SQL: ${response.status} ${response.statusText}\n${errorText}`);
     }
+    
+    console.log('✅ Database initialized successfully!');
+    console.log('\nYour SegakAI database is now ready to use.');
+    console.log('\nTo make a user an admin, go to the Supabase dashboard:');
+    console.log('1. Navigate to Authentication > Users');
+    console.log('2. Find the user you want to make an admin');
+    console.log('3. Click "Edit" and add {"is_admin": "true"} to their metadata');
+    console.log('4. Save the changes');
     
   } catch (err) {
     console.error('Initialization failed:', err);
@@ -93,15 +59,13 @@ async function initializeDatabase() {
 }
 
 // Use node-fetch for Node.js < 18
-let fetch;
 if (parseInt(process.versions.node.split('.')[0]) < 18) {
   // For Node.js < 18
   import('node-fetch').then(module => {
-    fetch = module.default;
+    global.fetch = module.default;
     initializeDatabase();
   });
 } else {
   // For Node.js >= 18
-  fetch = global.fetch;
   initializeDatabase();
 } 

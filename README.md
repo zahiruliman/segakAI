@@ -47,16 +47,11 @@ SegakAI is a modern web application that uses artificial intelligence to generat
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ```
 
-4. Set up the Supabase database (choose one method):
-
-   **Method 1: One-Shot Initialization (Recommended)**
+4. Initialize the Supabase database
    ```bash
    npm run init-db
    ```
    This script will automatically create all necessary tables, functions, and initial data.
-
-   **Method 2: Manual Setup**
-   Run the SQL in `lib/supabase-schema.sql` in your Supabase SQL editor to create the necessary tables and functions.
 
 5. Run the development server
    ```bash
@@ -65,47 +60,22 @@ SegakAI is a modern web application that uses artificial intelligence to generat
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## First-Time Admin Setup
+## Admin Access
 
-To access the admin settings page and configure your app, you need to set up the first admin user. You have three options:
+The admin settings page is only accessible to users with admin privileges:
 
-### Option 1: Using the Web UI
 1. Create a regular user account through the sign-up page
-2. After Supabase setup, set the admin password in the `app_config` table with the key `ADMIN_PASSWORD`
-3. Go to the make-admin page at `/admin/make-admin` and enter:
-   - The email of the user you want to make an admin
-   - The admin password you set in step 2
-4. Access the admin panel at `/admin`
-5. Change the admin password and set your OpenAI API key
-
-### Option 2: Using the Database Setup Script
-1. Ensure your Supabase credentials are in `.env.local`
-2. Run the database setup script:
-   ```bash
-   npm run setup-admin-db
-   ```
-3. This will create the necessary tables and set the default admin password to "change_this_immediately"
-
-### Option 3: Using the Direct Admin User Setup Script
-1. Add your Supabase service role key to `.env.local` as `SUPABASE_SERVICE_ROLE_KEY=your-key`
-2. Create a regular user account through the sign-up page
-3. Run the admin user setup script:
-   ```bash
-   npm run setup-admin-user
-   ```
-4. Enter the email of the user you want to make an admin
-5. Access the admin panel at `/admin`
-
-After setting up the admin user, you should:
-1. Access the admin settings at `/admin`
-2. Change the default admin password
-3. Set your OpenAI API key
+2. In the Supabase dashboard, navigate to Authentication > Users
+3. Find your user and click "Edit"
+4. Add `{"is_admin": true}` to the user's metadata
+5. Save the changes
+6. Access the admin panel at `/admin`
+7. Set your OpenAI API key in the admin settings
 
 ### Admin Settings
 
 The admin settings page allows you to configure:
 - OpenAI API Key
-- Admin Password
 - Other application settings
 
 ## Using the App
@@ -131,6 +101,8 @@ The admin settings page allows you to configure:
 - `app/dashboard/page.tsx` - User dashboard
 - `app/api/generate/route.ts` - AI plan generation endpoint
 - `app/admin/page.tsx` - Admin settings page
+- `lib/supabase-schema.sql` - Database schema
+- `scripts/init-db.js` - Database initialization script
 
 ## License
 

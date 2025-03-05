@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createClient } from "@supabase/supabase-js";
-import { Eye, EyeOff, Save, Lock, UserPlus, ArrowLeft } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { Eye, EyeOff, Save, Lock, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,34 +35,23 @@ export default function AdminPage() {
     const checkAdminAccess = async () => {
       setIsLoading(true);
       try {
-        // Initialize Supabase client
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
         // Check authentication status
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          throw sessionError;
+        }
+        
         if (!session) {
           toast.error("You must be logged in to access admin settings");
           router.push("/login?redirect=/admin");
           return;
         }
 
-        // Verify admin status
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-
-        if (userError || !userData) {
-          toast.error("Failed to load user data");
-          router.push("/dashboard");
-          return;
-        }
-
-        const isAdmin = userData?.raw_user_meta_data?.is_admin === true || 
-                        userData?.user_metadata?.is_admin === true;
+        // Check if user is admin directly from metadata
+        const isAdmin = 
+          session.user.user_metadata?.is_admin === true || 
+          session.user.user_metadata?.is_admin === 'true';
 
         if (!isAdmin) {
           toast.error("You don't have permission to access admin settings");
@@ -72,24 +61,27 @@ export default function AdminPage() {
 
         setIsAdminUser(true);
 
-        // Fetch configurations
-        const response = await fetch("/api/config");
-        if (!response.ok) {
-          throw new Error(`Error fetching config: ${response.statusText}`);
+        // Fetch configurations from app_config table
+        const { data: configData, error: configError } = await supabase
+          .from('app_config')
+          .select('*');
+          
+        if (configError) {
+          throw configError;
         }
         
-        const data = await response.json();
-        setConfigs(data);
+        setConfigs(configData || []);
         
         // Initialize updatedValues with current values
         const values: Record<string, string> = {};
-        data.forEach((config: ConfigItem) => {
+        configData?.forEach((config: ConfigItem) => {
           values[config.key] = config.value;
         });
         setUpdatedValues(values);
       } catch (error) {
         console.error("Error loading admin page:", error);
         toast.error("Failed to load admin settings");
+        router.push("/dashboard");
       } finally {
         setIsLoading(false);
       }
@@ -115,28 +107,26 @@ export default function AdminPage() {
   const saveConfig = async (key: string) => {
     try {
       setIsSaving(true);
-      const response = await fetch("/api/config", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          key,
-          value: updatedValues[key],
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error updating config: ${response.statusText}`);
+      
+      // Update the config directly using Supabase
+      const { error } = await supabase
+        .from('app_config')
+        .update({ value: updatedValues[key] })
+        .eq('key', key);
+        
+      if (error) {
+        throw error;
       }
 
       toast.success(`${key} updated successfully`);
       
       // Refresh the configs
-      const response2 = await fetch("/api/config");
-      if (response2.ok) {
-        const data = await response2.json();
-        setConfigs(data);
+      const { data: refreshedData } = await supabase
+        .from('app_config')
+        .select('*');
+        
+      if (refreshedData) {
+        setConfigs(refreshedData);
       }
     } catch (error) {
       console.error("Error saving config:", error);
@@ -152,7 +142,7 @@ export default function AdminPage() {
         <h1 className="text-3xl font-bold">Admin Settings</h1>
         <Separator />
         <div className="grid gap-6">
-          {[1, 2, 3].map((i) => (
+          {[1, 2].map((i) => (
             <Card key={i}>
               <CardHeader>
                 <Skeleton className="h-8 w-1/3" />
@@ -161,9 +151,6 @@ export default function AdminPage() {
               <CardContent>
                 <Skeleton className="h-10 w-full" />
               </CardContent>
-              <CardFooter>
-                <Skeleton className="h-10 w-24" />
-              </CardFooter>
             </Card>
           ))}
         </div>
@@ -179,19 +166,10 @@ export default function AdminPage() {
     <div className="container mx-auto py-10 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Admin Settings</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => router.push("/admin/make-admin")}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Make Admin
-          </Button>
-          <Button onClick={() => router.push("/dashboard")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </div>
+        <Button onClick={() => router.push("/dashboard")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Dashboard
+        </Button>
       </div>
       
       <Separator />
@@ -248,9 +226,6 @@ export default function AdminPage() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="bg-muted/50 text-xs text-muted-foreground">
-              Last updated: {new Date(config.updated_at).toLocaleString()}
-            </CardFooter>
           </Card>
         ))}
       </div>

@@ -7,8 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "setup-admin-db": "node setup-admin.js",
-    "setup-admin-user": "node setup-admin-user.js",
     "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
