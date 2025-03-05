@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ServiceWorkerRegistration } from "./sw-register";
 import { ThemeProvider } from "@/components/theme-provider";
 import { NavbarWrapper } from "@/components/navbar-wrapper";
+import { AdminBypassButton } from "@/components/AdminBypassButton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -77,6 +78,7 @@ export default function RootLayout({
           <main className="flex-1 flex flex-col">{children}</main>
           <Toaster />
           <ServiceWorkerRegistration />
+          <AdminBypassButton />
         </ThemeProvider>
       </body>
     </html>
