@@ -1,17 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button, ButtonProps } from '@/components/ui/button';
+import { useState, useEffect, ComponentProps } from 'react';
+import { Button } from '@/components/ui/button';
 import { PhoneIcon } from 'lucide-react';
+
+type ButtonProps = ComponentProps<typeof Button>;
 
 /**
  * This component handles PWA installation
  */
 export function InstallPWA({ children, ...props }: ButtonProps) {
+  const [mounted, setMounted] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    
     // Store the install prompt event for later use
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
@@ -22,10 +27,18 @@ export function InstallPWA({ children, ...props }: ButtonProps) {
       setIsInstallable(true);
     };
 
-    // Add event listener
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    // If already installed, hide the button
+    const handleAppInstalled = () => {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+      console.log('PWA was installed');
+    };
 
-    // Check if the app is already installed
+    // Add event listeners
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // Check if already installed or in standalone mode
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstallable(false);
     }
@@ -33,6 +46,7 @@ export function InstallPWA({ children, ...props }: ButtonProps) {
     // Cleanup
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
@@ -44,24 +58,28 @@ export function InstallPWA({ children, ...props }: ButtonProps) {
     
     // Wait for the user to respond to the prompt
     const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
     
-    // We've used the prompt, so we can't use it again
+    // Reset the deferred prompt variable
     setDeferredPrompt(null);
     
-    // Hide the install button
+    // Hide the button if installed
     if (outcome === 'accepted') {
       setIsInstallable(false);
     }
   };
 
-  // If the app is not installable, don't render the button
-  if (!isInstallable) return null;
+  // Only render on client and when installable
+  if (!mounted || !isInstallable) return null;
 
-  // Render the install button
   return (
     <Button onClick={handleInstallClick} {...props}>
-      <PhoneIcon className="mr-2 h-4 w-4" />
-      {children || 'Install App'}
+      {children || (
+        <>
+          <PhoneIcon className="mr-2 h-4 w-4" />
+          Install App
+        </>
+      )}
     </Button>
   );
 } 

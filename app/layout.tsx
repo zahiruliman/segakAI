@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/ui/navbar";
@@ -19,14 +19,18 @@ export const metadata: Metadata = {
   title: "SegakAI - Personalized Workout & Diet Plans",
   description: "Generate personalized and extensive workout and diet plans with AI",
   keywords: ["workout", "diet", "fitness", "AI", "personalized plans"],
-  authors: [{ name: "SegakAI Team" }],
   manifest: "/manifest.json",
-  themeColor: "#ffffff",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "SegakAI",
+  icons: {
+    icon: "/favicon.ico",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0284c7",
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -35,10 +39,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="min-h-screen font-sans antialiased">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen font-sans antialiased flex flex-col">
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 flex flex-col">{children}</main>
         <Toaster position="top-center" closeButton richColors />
         <ServiceWorkerRegistration />
       </body>

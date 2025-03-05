@@ -8,75 +8,105 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function Navbar() {
+// Separate component for the navbar content to avoid hooks issues
+function NavbarContent({ scrolled }: { scrolled: boolean }) {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
-
-  // Only show navbar on landing page
-  if (pathname !== "/") {
-    return null;
-  }
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const isScrolled = window.scrollY > 20;
-      if (isScrolled !== scrolled) {
-        setScrolled(isScrolled);
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [scrolled]);
-
   const isActive = (path: string) => pathname === path;
 
   return (
-    <motion.header 
+    <motion.header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 border-b transition-all duration-200",
-        scrolled ? "bg-background/95 backdrop-blur border-border" : "bg-transparent border-transparent"
+        "fixed top-0 w-full z-30 transition-all duration-300",
+        scrolled ? "bg-background/80 backdrop-blur shadow-sm py-2" : "bg-transparent py-4"
       )}
-      initial={{ y: -100, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
     >
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="font-bold text-2xl">
+      <div className="container flex justify-between items-center">
+        <Link href="/" className="font-bold text-xl">
           SegakAI
         </Link>
 
         <NavigationMenu>
-          <NavigationMenuList className="gap-6">
+          <NavigationMenuList className="hidden md:flex gap-6">
             <NavigationMenuItem>
-              <Link href="/" legacyBehavior passHref>
-                <NavigationMenuLink className={cn(
-                  "font-medium transition-colors hover:text-primary",
-                  isActive("/") ? "text-primary" : "text-muted-foreground"
-                )}>
-                  Home
-                </NavigationMenuLink>
-              </Link>
+              <NavigationMenuLink
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/") ? "font-medium text-primary" : "text-foreground/80"
+                )}
+                href="/"
+              >
+                Home
+              </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <Link href="/#features" legacyBehavior passHref>
-                <NavigationMenuLink className="font-medium text-muted-foreground transition-colors hover:text-primary">
-                  Features
-                </NavigationMenuLink>
-              </Link>
+              <NavigationMenuLink
+                className={cn(
+                  "hover:text-primary transition-colors",
+                  isActive("/about") ? "font-medium text-primary" : "text-foreground/80"
+                )}
+                href="#features"
+              >
+                Features
+              </NavigationMenuLink>
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
         <div className="flex items-center gap-4">
-          <Link href="/login" passHref>
-            <Button variant="ghost">Log in</Button>
-          </Link>
-          <Link href="/onboarding" passHref>
-            <Button>Get Started</Button>
-          </Link>
+          <Button asChild variant="ghost">
+            <Link href="/login">Log in</Link>
+          </Button>
+          <Button asChild>
+            <Link href="/onboarding">Sign up</Link>
+          </Button>
         </div>
       </div>
     </motion.header>
+  );
+}
+
+export function Navbar() {
+  // Use state to track whether we're mounted on the client
+  const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [isLandingPage, setIsLandingPage] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+    setIsLandingPage(pathname === "/");
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mounted || !isLandingPage) return;
+
+    const handleScroll = () => {
+      const offset = window.scrollY;
+      if (offset > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [mounted, isLandingPage]);
+
+  // Only render on the client
+  if (!mounted) return null;
+
+  // Only render on the landing page
+  if (!isLandingPage) return null;
+
+  return (
+    <AnimatePresence>
+      <NavbarContent scrolled={scrolled} />
+    </AnimatePresence>
   );
 } 

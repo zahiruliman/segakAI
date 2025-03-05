@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export function ServiceWorkerRegistration() {
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     // Only register the service worker in production and if the browser supports it
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       window.addEventListener('load', () => {
@@ -19,6 +22,6 @@ export function ServiceWorkerRegistration() {
     }
   }, []);
 
-  // This component doesn't render anything
+  // Return null to prevent any rendering that might cause hydration issues
   return null;
 } 
