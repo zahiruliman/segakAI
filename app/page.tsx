@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, PhoneIcon, Activity, Cloud, Zap } from "lucide-react";
+import { InstallPWA } from "./pwa-install";
 
 export default function Home() {
   // Animation variants
@@ -117,9 +118,9 @@ export default function Home() {
           <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
             Install our app on your device for a better experience and offline access to your fitness plans.
           </p>
-          <Button size="lg" variant="default">
+          <InstallPWA size="lg" variant="default">
             Install App
-          </Button>
+          </InstallPWA>
         </div>
       </motion.section>
     </div>
