@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/lib/supabase";
-import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { PlusCircle, FileDown, Share2, Activity, Calendar, ChevronRight, Utensils } from "lucide-react";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
   const [plans, setPlans] = useState<any[]>([]);
@@ -19,31 +21,40 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          // Redirect to login if not authenticated
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          throw new Error("Missing Supabase credentials");
+        }
+
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
           router.push("/login");
           return;
         }
-        setUser(user);
 
-        // Fetch user plans
-        const { data: plans, error } = await supabase
+        setUser(session.user);
+
+        // Fetch user's plans
+        const { data: userPlans, error } = await supabase
           .from("plans")
           .select("*")
-          .eq("user_id", user.id)
+          .eq("user_id", session.user.id)
           .order("created_at", { ascending: false });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
 
-        if (plans && plans.length > 0) {
-          setPlans(plans);
-          setSelectedPlan(plans[0]);
+        setPlans(userPlans || []);
+        if (userPlans && userPlans.length > 0) {
+          setSelectedPlan(userPlans[0]);
         }
       } catch (error) {
-        console.error("Error fetching plans:", error);
+        console.error("Error checking user:", error);
+        toast.error("Failed to load dashboard");
       } finally {
         setLoading(false);
       }
@@ -53,244 +64,242 @@ export default function DashboardPage() {
   }, [router]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const handleCreateNewPlan = () => {
+    router.push("/onboarding/form?step=1");
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <div className="flex flex-col items-center gap-2">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-          <p className="text-muted-foreground">Loading your plans...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[80vh]">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-6">Your Fitness Dashboard</h1>
-
-      {plans.length === 0 ? (
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-semibold mb-4">No Plans Yet</h2>
-          <p className="text-muted-foreground mb-6">
-            You haven't created any workout or diet plans yet.
-          </p>
-          <Button asChild size="lg">
-            <Link href="/onboarding/form?step=1">Create Your First Plan</Link>
+    <AnimatePresence mode="wait">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="container py-8 md:py-12"
+      >
+        <div className="flex flex-col md:flex-row items-start justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Your Fitness Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
+              {plans.length > 0 
+                ? `You have ${plans.length} plan${plans.length === 1 ? '' : 's'}`
+                : "Get started with your first personalized plan"}
+            </p>
+          </div>
+          <Button 
+            onClick={handleCreateNewPlan}
+            className="mt-4 md:mt-0 flex items-center gap-2"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Create New Plan
           </Button>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-1">
-            <div className="space-y-4">
+
+        {plans.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="border-dashed border-2 p-8">
+              <div className="flex flex-col items-center justify-center text-center space-y-6 py-12">
+                <div className="bg-primary/10 p-3 rounded-full">
+                  <Activity className="h-8 w-8 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-2xl font-semibold">Create Your First Plan</h2>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Get started with a personalized workout and diet plan tailored to your specific goals and lifestyle.
+                  </p>
+                </div>
+                <Button 
+                  onClick={handleCreateNewPlan}
+                  size="lg"
+                  className="mt-2 flex items-center gap-2"
+                >
+                  Get Started
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <motion.div 
+              className="lg:col-span-4 space-y-4"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               <h2 className="text-xl font-semibold">Your Plans</h2>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {plans.map((plan) => (
-                  <Card 
-                    key={plan.id} 
-                    className={`cursor-pointer ${selectedPlan?.id === plan.id ? 'border-primary' : ''}`}
-                    onClick={() => setSelectedPlan(plan)}
+                  <motion.div
+                    key={plan.id}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                   >
-                    <CardHeader className="py-4">
-                      <CardTitle className="text-base">
-                        Plan from {formatDate(plan.created_at)}
-                      </CardTitle>
-                      <CardDescription className="text-xs truncate">
-                        Goal: {plan.user_details?.goals?.primaryGoal?.replace('-', ' ')}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                    <Card 
+                      className={`cursor-pointer transition-colors ${selectedPlan?.id === plan.id ? 'border-primary bg-primary/5' : ''}`}
+                      onClick={() => setSelectedPlan(plan)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium">{formatDate(plan.created_at)}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {plan.plan_data?.workoutPlan?.goal || "Custom Plan"}
+                            </p>
+                          </div>
+                          {selectedPlan?.id === plan.id && <ChevronRight className="h-4 w-4 text-primary" />}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 ))}
               </div>
-              <Button asChild size="sm" variant="outline" className="w-full">
-                <Link href="/onboarding/form?step=1">Create New Plan</Link>
+              <Button 
+                variant="outline" 
+                className="w-full mt-4 flex items-center gap-2"
+                onClick={handleCreateNewPlan}
+              >
+                <PlusCircle className="h-4 w-4" />
+                Create New Plan
               </Button>
-            </div>
-          </div>
+            </motion.div>
 
-          <div className="md:col-span-3">
             {selectedPlan && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Personalized Plan</CardTitle>
-                  <CardDescription>
-                    Created on {formatDate(selectedPlan.created_at)}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="workout" className="w-full">
-                    <TabsList className="grid grid-cols-3 mb-4">
-                      <TabsTrigger value="workout">Workout Plan</TabsTrigger>
-                      <TabsTrigger value="diet">Diet Plan</TabsTrigger>
-                      <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="workout">
-                      <div className="space-y-6">
+              <motion.div 
+                className="lg:col-span-8"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle>Plan Details</CardTitle>
+                        <CardDescription>Created on {formatDate(selectedPlan.created_at)}</CardDescription>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <FileDown className="h-4 w-4" />
+                          <span className="hidden sm:inline">Download</span>
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex items-center gap-1">
+                          <Share2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Share</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="workout">
+                      <TabsList className="mb-4">
+                        <TabsTrigger value="workout" className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          Workout Plan
+                        </TabsTrigger>
+                        <TabsTrigger value="diet" className="flex items-center gap-1">
+                          <Utensils className="h-4 w-4" />
+                          Diet Plan
+                        </TabsTrigger>
+                        <TabsTrigger value="recommendations">
+                          Recommendations
+                        </TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="workout" className="space-y-4">
                         <div>
-                          <h3 className="text-lg font-semibold mb-2">Overview</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.workoutPlan?.summary}</p>
+                          <h3 className="text-lg font-medium mb-2">Goal</h3>
+                          <p>{selectedPlan.plan_data?.workoutPlan?.goal || "No specific goal defined"}</p>
                         </div>
-                        
                         <Separator />
-                        
                         <div>
-                          <h3 className="text-lg font-semibold mb-4">Weekly Schedule</h3>
+                          <h3 className="text-lg font-medium mb-2">Weekly Schedule</h3>
                           <div className="space-y-4">
-                            {selectedPlan.plan_data?.workoutPlan?.weeklySchedule?.map((day: any, index: number) => (
-                              <Card key={index}>
-                                <CardHeader className="py-3">
-                                  <CardTitle className="text-base">{day.day}: {day.focus}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="py-2">
-                                  <div className="space-y-2">
-                                    {day.exercises.map((exercise: any, exerciseIndex: number) => (
-                                      <div key={exerciseIndex} className="bg-muted/50 p-3 rounded-md">
-                                        <div className="flex justify-between mb-1">
-                                          <span className="font-medium">{exercise.name}</span>
-                                          <span className="text-muted-foreground text-sm">{exercise.sets} × {exercise.reps}</span>
-                                        </div>
-                                        {exercise.notes && (
-                                          <p className="text-sm text-muted-foreground">{exercise.notes}</p>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
+                            {selectedPlan.plan_data?.workoutPlan?.weeklySchedule ? (
+                              Object.entries(selectedPlan.plan_data.workoutPlan.weeklySchedule).map(([day, exercises]: [string, any]) => (
+                                <div key={day} className="rounded-md border p-4">
+                                  <h4 className="font-medium capitalize mb-2">{day}</h4>
+                                  <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                    {Array.isArray(exercises) ? (
+                                      exercises.map((exercise: string, i: number) => (
+                                        <li key={i}>{exercise}</li>
+                                      ))
+                                    ) : (
+                                      <li>{exercises}</li>
+                                    )}
+                                  </ul>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted-foreground">No weekly schedule provided</p>
+                            )}
                           </div>
                         </div>
-                        
+                      </TabsContent>
+                      <TabsContent value="diet" className="space-y-4">
+                        <div>
+                          <h3 className="text-lg font-medium mb-2">Approach</h3>
+                          <p>{selectedPlan.plan_data?.dietPlan?.approach || "No specific approach defined"}</p>
+                        </div>
                         <Separator />
-                        
                         <div>
-                          <h3 className="text-lg font-semibold mb-2">Progression Plan</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.workoutPlan?.progressionPlan}</p>
-                        </div>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="diet">
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Nutritional Approach</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.dietPlan?.summary}</p>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card>
-                            <CardHeader className="py-3">
-                              <CardTitle className="text-base">Daily Calories</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p>{selectedPlan.plan_data?.dietPlan?.dailyCalories}</p>
-                            </CardContent>
-                          </Card>
-                          
-                          <Card>
-                            <CardHeader className="py-3">
-                              <CardTitle className="text-base">Macronutrients</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="space-y-1">
-                                <p><span className="font-medium">Protein:</span> {selectedPlan.plan_data?.dietPlan?.macronutrients?.protein}</p>
-                                <p><span className="font-medium">Carbs:</span> {selectedPlan.plan_data?.dietPlan?.macronutrients?.carbs}</p>
-                                <p><span className="font-medium">Fats:</span> {selectedPlan.plan_data?.dietPlan?.macronutrients?.fats}</p>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div>
-                          <h3 className="text-lg font-semibold mb-4">Meal Plan</h3>
+                          <h3 className="text-lg font-medium mb-2">Daily Meals</h3>
                           <div className="space-y-4">
-                            {selectedPlan.plan_data?.dietPlan?.mealPlan?.map((meal: any, index: number) => (
-                              <Card key={index}>
-                                <CardHeader className="py-3">
-                                  <CardTitle className="text-base">{meal.meal}</CardTitle>
-                                </CardHeader>
-                                <CardContent className="py-2">
-                                  <div className="space-y-4">
-                                    {meal.options.map((option: any, optionIndex: number) => (
-                                      <div key={optionIndex} className="bg-muted/50 p-3 rounded-md">
-                                        <h4 className="font-medium mb-2">{option.name}</h4>
-                                        
-                                        <div className="mb-2">
-                                          <p className="text-sm font-medium text-muted-foreground mb-1">Ingredients:</p>
-                                          <ul className="text-sm list-disc list-inside ml-2">
-                                            {option.ingredients.map((ingredient: string, i: number) => (
-                                              <li key={i}>{ingredient}</li>
-                                            ))}
-                                          </ul>
-                                        </div>
-                                        
-                                        <div className="mb-2">
-                                          <p className="text-sm font-medium text-muted-foreground mb-1">Preparation:</p>
-                                          <p className="text-sm">{option.preparation}</p>
-                                        </div>
-                                        
-                                        <div>
-                                          <p className="text-sm font-medium text-muted-foreground mb-1">Nutritional Info:</p>
-                                          <p className="text-sm">{option.nutritionalInfo}</p>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
+                            {selectedPlan.plan_data?.dietPlan?.meals ? (
+                              Object.entries(selectedPlan.plan_data.dietPlan.meals).map(([meal, description]: [string, any]) => (
+                                <div key={meal} className="rounded-md border p-4">
+                                  <h4 className="font-medium capitalize mb-2">{meal}</h4>
+                                  <p className="text-muted-foreground">{description}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted-foreground">No meal plan provided</p>
+                            )}
                           </div>
                         </div>
-                        
+                      </TabsContent>
+                      <TabsContent value="recommendations" className="space-y-4">
                         <div>
-                          <h3 className="text-lg font-semibold mb-2">Hydration</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.dietPlan?.hydration}</p>
+                          <h3 className="text-lg font-medium mb-2">Additional Recommendations</h3>
+                          {selectedPlan.plan_data?.recommendations ? (
+                            <ul className="list-disc list-inside space-y-3 pl-2">
+                              {selectedPlan.plan_data.recommendations.map((rec: string, i: number) => (
+                                <li key={i} className="text-muted-foreground">{rec}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-muted-foreground">No additional recommendations provided</p>
+                          )}
                         </div>
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="recommendations">
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Workout Recommendations</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.workoutPlan?.recommendations}</p>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Diet Recommendations</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.dietPlan?.recommendations}</p>
-                        </div>
-                        
-                        <Separator />
-                        
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Additional Lifestyle Recommendations</h3>
-                          <p className="text-muted-foreground">{selectedPlan.plan_data?.additionalRecommendations}</p>
-                        </div>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                  <Button variant="outline">Download PDF</Button>
-                  <Button variant="outline">Share Plan</Button>
-                </CardFooter>
-              </Card>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </motion.div>
             )}
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
   );
 } 
