@@ -1,3 +1,6 @@
+-- SegakAI Database Schema
+-- This file contains the minimal database setup required for the application
+
 -- Create plans table for storing workout and diet plans
 CREATE TABLE IF NOT EXISTS public.plans (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -39,7 +42,7 @@ ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  -- Check for admin privileges in both user_metadata and raw_user_meta_data
+  -- Check for admin privileges in user_metadata
   RETURN EXISTS (
     SELECT 1 FROM auth.users
     WHERE id = auth.uid() AND (
@@ -67,8 +70,7 @@ CREATE POLICY "Only admins can update app config"
 -- Insert initial config values
 INSERT INTO public.app_config (key, value, is_secret, description)
 VALUES
-  ('OPENAI_API_KEY', '', true, 'OpenAI API Key for generating plans'),
-  ('ADMIN_PASSWORD', 'change_this_immediately', true, 'Password for accessing admin settings')
+  ('OPENAI_API_KEY', '', true, 'OpenAI API Key for generating plans')
 ON CONFLICT (key) DO NOTHING;
 
 -- Create a function to get a config value

@@ -1,115 +1,348 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "next/navigation";
+import { 
+  NavigationMenu, 
+  NavigationMenuList, 
+  NavigationMenuItem, 
+  NavigationMenuLink 
+} from "@/components/ui/navigation-menu";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
+import { User, Home, Settings, LogOut, Menu } from "lucide-react";
 
-export function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+// Mobile navigation component
+function MobileNav({ user }: { user: any | null }) {
   const pathname = usePathname();
-
+  const router = useRouter();
   const isActive = (path: string) => pathname === path;
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+  };
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold">SegakAI</span>
-          </Link>
-        </div>
-        
-        {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <Link 
-            href="/"
-            className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/') ? 'text-primary' : 'text-foreground/60'}`}
-          >
-            Home
-          </Link>
-          <Link 
-            href="#features"
-            className="text-sm font-medium text-foreground/60 transition-colors hover:text-primary"
-          >
-            Features
-          </Link>
-          <Link 
-            href="/dashboard"
-            className={`text-sm font-medium transition-colors hover:text-primary ${isActive('/dashboard') ? 'text-primary' : 'text-foreground/60'}`}
-          >
-            Dashboard
-          </Link>
-        </nav>
-        
-        {/* Auth buttons */}
-        <div className="hidden md:flex items-center gap-4">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/login">Log In</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/onboarding">Sign Up</Link>
-          </Button>
-        </div>
-        
-        {/* Mobile menu button */}
-        <button
-          className="flex md:hidden items-center justify-center rounded-md p-2.5 text-foreground"
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        >
-          <span className="sr-only">Open main menu</span>
-          {isMenuOpen ? (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          )}
-        </button>
-      </div>
-      
-      {/* Mobile menu */}
-      {isMenuOpen && (
-        <div className="md:hidden py-4 px-6 border-b">
-          <nav className="flex flex-col gap-4">
-            <Link
-              href="/"
-              className={`text-base font-medium ${isActive('/') ? 'text-primary' : 'text-foreground/80'}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Home
-            </Link>
-            <Link
-              href="#features"
-              className="text-base font-medium text-foreground/80"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Features
-            </Link>
-            <Link
-              href="/dashboard"
-              className={`text-base font-medium ${isActive('/dashboard') ? 'text-primary' : 'text-foreground/80'}`}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <div className="flex flex-col gap-3 pt-4 mt-4 border-t">
-              <Button asChild variant="outline" className="w-full justify-center">
-                <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                  Log In
-                </Link>
-              </Button>
-              <Button asChild className="w-full justify-center">
-                <Link href="/onboarding" onClick={() => setIsMenuOpen(false)}>
-                  Sign Up
-                </Link>
-              </Button>
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="flex flex-col">
+        <div className="px-2 py-6">
+          <Link href="/" className="font-bold text-xl flex items-center gap-2 mb-6">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+              S
             </div>
+            <span>SegakAI</span>
+          </Link>
+          <nav className="flex flex-col space-y-3">
+            {user ? (
+              <>
+                <div className="flex flex-col space-y-1 mb-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src="" alt={user.email} />
+                      <AvatarFallback className="bg-primary/10 text-primary">
+                        {user.email?.charAt(0).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium leading-none">{user.email}</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate max-w-[180px]">
+                        {user.id}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Link 
+                  href="/dashboard" 
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
+                    isActive("/dashboard") ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+                  )}
+                >
+                  <Home className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link 
+                  href="/profile" 
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
+                    isActive("/profile") ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+                  )}
+                >
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </Link>
+                <button 
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-destructive hover:bg-destructive/10 transition-colors text-left"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link 
+                  href="/login" 
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-md transition-colors",
+                    isActive("/login") ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted"
+                  )}
+                >
+                  Log in
+                </Link>
+                <Link 
+                  href="/onboarding" 
+                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </nav>
         </div>
+        <div className="mt-auto px-2 py-4 border-t">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Theme</p>
+            <ThemeToggle />
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+// Desktop navigation content
+function NavbarContent({ 
+  scrolled, 
+  isLandingPage, 
+  user 
+}: { 
+  scrolled: boolean; 
+  isLandingPage: boolean;
+  user: any | null;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isActive = (path: string) => pathname === path;
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+  };
+
+  return (
+    <motion.header
+      className={cn(
+        "fixed top-0 w-full z-30 transition-all duration-300",
+        scrolled || !isLandingPage ? "bg-background/80 backdrop-blur shadow-sm py-2" : "bg-transparent py-4"
       )}
-    </header>
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="container flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <MobileNav user={user} />
+          
+          <Link href="/" className="font-bold text-xl flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+              S
+            </div>
+            <span>SegakAI</span>
+          </Link>
+
+          <NavigationMenu className="hidden md:flex ml-6">
+            <NavigationMenuList className="gap-6">
+              {isLandingPage ? (
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      className={cn(
+                        "hover:text-primary transition-colors",
+                        isActive("/") ? "font-medium text-primary" : "text-foreground/80"
+                      )}
+                      href="/"
+                    >
+                      Home
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      className={cn(
+                        "hover:text-primary transition-colors",
+                        "text-foreground/80"
+                      )}
+                      href="#features"
+                    >
+                      Features
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </>
+              ) : user ? (
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuLink
+                      className={cn(
+                        "hover:text-primary transition-colors flex items-center gap-1",
+                        isActive("/dashboard") ? "font-medium text-primary" : "text-foreground/80"
+                      )}
+                      href="/dashboard"
+                    >
+                      <Home className="h-4 w-4" />
+                      Dashboard
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </>
+              ) : null}
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
+          
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full md:h-9 md:w-9">
+                  <Avatar className="h-8 w-8 md:h-9 md:w-9">
+                    <AvatarImage src="" alt={user.email} />
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {user.email?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <div className="flex flex-col space-y-1 p-2">
+                  <p className="text-sm font-medium leading-none">{user.email}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user.id}
+                  </p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                    <Home className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
+                    <Settings className="h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="hidden md:flex items-center gap-3">
+              <Button asChild variant="ghost">
+                <Link href="/login">Log in</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/onboarding">Sign up</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.header>
+  );
+}
+
+export function Navbar() {
+  // Use state to track whether we're mounted on the client
+  const [mounted, setMounted] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [isLandingPage, setIsLandingPage] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+    setIsLandingPage(pathname === "/");
+
+    // Check for user session
+    const checkUser = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setUser(data.session.user);
+      }
+    };
+    
+    checkUser();
+
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session) {
+          setUser(session.user);
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const handleScroll = () => {
+      const offset = window.scrollY;
+      if (offset > 50) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [mounted]);
+
+  // Only render on the client
+  if (!mounted) return null;
+
+  return (
+    <AnimatePresence>
+      <NavbarContent scrolled={scrolled} isLandingPage={isLandingPage} user={user} />
+    </AnimatePresence>
   );
 } 

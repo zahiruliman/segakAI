@@ -1,12 +1,15 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -14,21 +17,28 @@ export default function OnboardingPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-
-    // Validate password match
+    
+    // Validate passwords match
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
-
+    
     setIsLoading(true);
 
     try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Missing Supabase credentials");
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -41,132 +51,88 @@ export default function OnboardingPage() {
         throw error;
       }
 
-      // Proceed to the form
-      router.push("/onboarding/form?step=1");
+      toast.success("Signup successful! Check your email to confirm your account.");
+      router.push("/dashboard");
     } catch (error) {
-      setError((error as Error).message);
+      console.error("Signup error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to sign up");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialSignUp = async (provider: 'google' | 'facebook') => {
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/onboarding/form?step=1`,
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      setError((error as Error).message);
-    }
-  };
-
   return (
-    <div className="container flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] py-12">
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Create an account</h1>
-          <p className="text-sm text-muted-foreground">
-            Sign up to get your personalized workout and diet plan
-          </p>
-        </div>
-
-        <div className="grid gap-6">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-muted/30 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md"
+      >
+        <Card className="border-border/40 shadow-lg">
+          <CardHeader className="space-y-1 text-center">
+            <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
+            <CardDescription>
+              Enter your email and create a password to get started
+            </CardDescription>
+          </CardHeader>
           <form onSubmit={handleSignUp}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="your.email@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="email"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
+                <Input 
+                  id="password" 
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Create a secure password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="new-password"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirm-password">Confirm Password</Label>
-                <Input
-                  id="confirm-password"
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input 
+                  id="confirmPassword" 
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  autoComplete="new-password"
                 />
               </div>
-              
-              {error && (
-                <div className="text-sm text-destructive">{error}</div>
-              )}
-              
-              <Button type="submit" disabled={isLoading} className="w-full">
+            </CardContent>
+            <CardFooter className="flex flex-col">
+              <Button 
+                type="submit" 
+                className="w-full mb-4" 
+                disabled={isLoading}
+              >
                 {isLoading ? "Creating account..." : "Create account"}
               </Button>
-            </div>
+              <p className="text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link 
+                  href="/login" 
+                  className="font-medium text-primary hover:underline"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </CardFooter>
           </form>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Button 
-              variant="outline" 
-              type="button" 
-              onClick={() => handleSocialSignUp('google')}
-              disabled={isLoading}
-            >
-              Google
-            </Button>
-            <Button 
-              variant="outline" 
-              type="button" 
-              onClick={() => handleSocialSignUp('facebook')}
-              disabled={isLoading}
-            >
-              Facebook
-            </Button>
-          </div>
-        </div>
-
-        <div className="text-center text-sm">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-primary underline-offset-4 hover:underline"
-          >
-            Sign in
-          </Link>
-        </div>
-      </div>
+        </Card>
+      </motion.div>
     </div>
   );
 } 
