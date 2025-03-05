@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SegakAI - Personalized Fitness and Diet Planning App
+
+SegakAI is a modern web application that uses artificial intelligence to generate personalized fitness and diet plans based on user's individual characteristics, goals, and preferences.
+
+## Features
+
+- User authentication (sign up, login, logout)
+- Multi-step form for collecting user information
+- AI-powered generation of personalized workout and diet plans
+- Dashboard to view and manage generated plans
+- Admin settings panel for configuration
+
+## Tech Stack
+
+- Next.js 15 with App Router
+- TypeScript
+- Tailwind CSS with shadcn/ui components
+- Supabase for authentication and database
+- OpenAI API for AI-powered plan generation
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js 18+ and npm
+- Supabase account
+- OpenAI API key
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository
+   ```bash
+   git clone https://github.com/yourusername/segakai.git
+   cd segakai
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+2. Install dependencies
+   ```bash
+   npm install
+   ```
 
-## Learn More
+3. Set up environment variables
+   Create a `.env.local` file with the following variables:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+4. Set up the Supabase database
+   Run the SQL in `lib/supabase-schema.sql` in your Supabase SQL editor to create the necessary tables and functions.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+5. Run the development server
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Deploy on Vercel
+## First-Time Admin Setup
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+To access the admin settings page and configure your app, you need to set up the first admin user. You have three options:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Option 1: Using the Web UI
+1. Create a regular user account through the sign-up page
+2. After Supabase setup, set the admin password in the `app_config` table with the key `ADMIN_PASSWORD`
+3. Go to the make-admin page at `/admin/make-admin` and enter:
+   - The email of the user you want to make an admin
+   - The admin password you set in step 2
+4. Access the admin panel at `/admin`
+5. Change the admin password and set your OpenAI API key
+
+### Option 2: Using the Database Setup Script
+1. Ensure your Supabase credentials are in `.env.local`
+2. Run the database setup script:
+   ```bash
+   npm run setup-admin-db
+   ```
+3. This will create the necessary tables and set the default admin password to "change_this_immediately"
+
+### Option 3: Using the Direct Admin User Setup Script
+1. Add your Supabase service role key to `.env.local` as `SUPABASE_SERVICE_ROLE_KEY=your-key`
+2. Create a regular user account through the sign-up page
+3. Run the admin user setup script:
+   ```bash
+   npm run setup-admin-user
+   ```
+4. Enter the email of the user you want to make an admin
+5. Access the admin panel at `/admin`
+
+After setting up the admin user, you should:
+1. Access the admin settings at `/admin`
+2. Change the default admin password
+3. Set your OpenAI API key
+
+### Admin Settings
+
+The admin settings page allows you to configure:
+- OpenAI API Key
+- Admin Password
+- Other application settings
+
+## Using the App
+
+1. Sign up or log in
+2. Complete the multi-step form with your personal information
+3. The AI will generate a personalized fitness and diet plan
+4. View your plan on the dashboard
+5. Create new plans as needed
+
+## Development
+
+### Folder Structure
+
+- `app/` - Next.js 15 app directory with all routes
+- `components/` - Reusable React components
+- `lib/` - Utility functions and shared code
+- `public/` - Static assets
+
+### Key Files
+
+- `app/page.tsx` - Homepage
+- `app/dashboard/page.tsx` - User dashboard
+- `app/api/generate/route.ts` - AI plan generation endpoint
+- `app/admin/page.tsx` - Admin settings page
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- OpenAI for providing the AI model
+- Supabase for authentication and database services
+- Vercel for hosting and deployment
+- shadcn/ui for the component system
