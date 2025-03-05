@@ -9,7 +9,7 @@ Below is an enhanced PRD for SegakAI that provides clear, actionable guidance to
 **Project Title:** SegakAI
 
 **Description:**  
-SegakAI is a progressive web app (PWA) that leverages the OpenAI API to generate personalized and extensive workout and diet plans. The app follows a human-centric, step-by-step approach to collect comprehensive user details. It tailors fitness recommendations—including exercise routines, durations, and nutritional plans—to the individual’s goals. The UI/UX is built strictly following [shadcn guidelines](https://ui.shadcn.com/) for a modern, clean design. The app is deployed on a dedicated VPS and uses [Supabase](https://supabase.com/docs) for backend services, including authentication (with social login support).
+SegakAI is a progressive web app (PWA) that leverages the OpenAI API to generate personalized and extensive workout and diet plans. The app follows a human-centric, step-by-step approach to collect comprehensive user details. It tailors fitness recommendations—including exercise routines, durations, and nutritional plans—to the individual's goals. The UI/UX is built strictly following [shadcn guidelines](https://ui.shadcn.com/) for a modern, clean design. The app is deployed on a dedicated VPS and uses [Supabase](https://supabase.com/docs) for backend services, including authentication (with social login support).
 
 ---
 
@@ -23,7 +23,7 @@ SegakAI is a progressive web app (PWA) that leverages the OpenAI API to generate
   
 - **Key Features:**
   - **Landing Page:**  
-    - Hero section with clear value proposition and a “Get Started” call-to-action.
+    - Hero section with clear value proposition and a "Get Started" call-to-action.
   - **Authentication Flow:**  
     - A sign-up/login page that integrates Supabase Auth.
   - **Onboarding Tutorial:**  
@@ -48,7 +48,7 @@ SegakAI is a progressive web app (PWA) that leverages the OpenAI API to generate
   };
   ```
 
-  *This example demonstrates conditional rendering based on the user’s authentication status.*
+  *This example demonstrates conditional rendering based on the user's authentication status.*
 
 ### 2.2. Step-by-Step Data Input Form
 
@@ -98,7 +98,7 @@ SegakAI is a progressive web app (PWA) that leverages the OpenAI API to generate
 - **Flow:**
   - On final form submission, the frontend sends user data to an API endpoint.
   - The backend processes the data and calls the OpenAI API to generate recommendations.
-  - The API returns a structured plan (workout details and diet plan) which is then saved in the user’s account.
+  - The API returns a structured plan (workout details and diet plan) which is then saved in the user's account.
 
 - **Developer Notes:**
   - Create an API route (e.g., `/api/generate.ts`) that handles requests.
@@ -192,7 +192,7 @@ SegakAI is a progressive web app (PWA) that leverages the OpenAI API to generate
 
 - **Developer Notes:**
   - Ensure the UI follows [shadcn guidelines](https://ui.shadcn.com/) for consistency and modern design.
-  - Utilize Next.js’s dynamic routing if you wish to split the dashboard and report pages in the future.
+  - Utilize Next.js's dynamic routing if you wish to split the dashboard and report pages in the future.
 
 ---
 
@@ -273,7 +273,7 @@ Below is the minimal file structure to keep the project lean yet fully functiona
     - [Supabase Documentation](https://supabase.com/docs)
   - **Integration Notes:**
     - Use [Supabase Auth](https://supabase.com/docs/guides/auth) for user authentication.
-    - Leverage Supabase’s PostgreSQL database for storing user plans and history.
+    - Leverage Supabase's PostgreSQL database for storing user plans and history.
 
 - **OpenAI API:**
   - **Documentation:**  
@@ -308,7 +308,7 @@ Below is the minimal file structure to keep the project lean yet fully functiona
 - **Project Wiki/README:**  
   - Expand the README.md with instructions on setting up environment variables, running the development server, and deploying to production.
 - **Example Response Documentation:**
-  - Document expected API responses (as shown in the API request/response section above) in the project’s Wiki or a dedicated API documentation file.
+  - Document expected API responses (as shown in the API request/response section above) in the project's Wiki or a dedicated API documentation file.
 
 ---
 
