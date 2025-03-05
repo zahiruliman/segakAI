@@ -1,67 +1,174 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlusCircle, FileDown, Share2, Activity, Calendar, ChevronRight, Utensils } from "lucide-react";
+import { PlusCircle, FileDown, Share2, Activity, Calendar, ChevronRight, Utensils, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Session } from "@supabase/supabase-js";
+
+// Define types to improve type safety
+interface SessionResult {
+  session: Session | null;
+  error: Error | null;
+}
+
+interface PlansResult {
+  plans: any[];
+  error: Error | null;
+}
 
 export default function DashboardPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Define the fetchUserSession function as a useCallback to avoid recreation on each render
+  const fetchUserSession = useCallback(async (): Promise<SessionResult> => {
+    console.log("Fetching user session...");
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Session fetch error:", error);
+        return { session: null, error };
+      }
+      
+      return { session: data.session, error: null };
+    } catch (error) {
+      console.error("Unexpected error in fetchUserSession:", error);
+      return { 
+        session: null, 
+        error: error instanceof Error ? error : new Error("Unknown error fetching session") 
+      };
+    }
+  }, []);
+
+  // Define the fetchUserPlans function to get plans for a user
+  const fetchUserPlans = useCallback(async (userId: string): Promise<PlansResult> => {
+    console.log("Fetching plans for user:", userId);
+    try {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.error("Plans fetch error:", error);
+        console.error("Error details:", JSON.stringify(error, null, 2));
+        return { plans: [], error };
+      }
+      
+      console.log("Plans fetched successfully:", data?.length || 0);
+      return { plans: data || [], error: null };
+    } catch (error) {
+      console.error("Unexpected error in fetchUserPlans:", error);
+      return { 
+        plans: [], 
+        error: error instanceof Error ? error : new Error("Unknown error fetching plans") 
+      };
+    }
+  }, []);
+
   useEffect(() => {
+    let isMounted = true;
+    const MAX_RETRIES = 3;
+    let retryCount = 0;
+
     const checkUser = async () => {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error("Missing Supabase credentials");
+        // Check authentication with retries
+        let sessionResult: SessionResult = { session: null, error: null };
+        
+        while (retryCount < MAX_RETRIES) {
+          sessionResult = await fetchUserSession();
+          if (sessionResult.session || retryCount >= MAX_RETRIES - 1) break;
+          
+          console.log(`Auth retry ${retryCount + 1}/${MAX_RETRIES}...`);
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between retries
         }
 
-        const supabase = createClient(supabaseUrl, supabaseKey);
+        if (!isMounted) return;
 
-        const { data: { session } } = await supabase.auth.getSession();
+        // Handle auth errors
+        if (sessionResult.error) {
+          console.error("Authentication error after retries:", sessionResult.error);
+          throw sessionResult.error;
+        }
 
-        if (!session) {
+        // Handle no session
+        if (!sessionResult.session) {
+          console.log("No active session found, redirecting to login");
           router.push("/login");
           return;
         }
 
-        setUser(session.user);
+        // Set user if authenticated
+        if (isMounted) {
+          setUser(sessionResult.session.user);
+          console.log("User authenticated:", sessionResult.session.user.id);
+        }
 
-        // Fetch user's plans
-        const { data: userPlans, error } = await supabase
-          .from("plans")
-          .select("*")
-          .eq("user_id", session.user.id)
-          .order("created_at", { ascending: false });
+        // Fetch plans for the authenticated user
+        try {
+          const { plans: userPlans, error: plansError } = await fetchUserPlans(sessionResult.session.user.id);
+          
+          if (!isMounted) return;
 
-        if (error) throw error;
+          if (plansError) {
+            console.warn("Plans fetch warning:", plansError);
+            toast.error(`Could not load your plans: ${plansError.message || "Unknown error"}`);
+            // We still continue, just with empty plans
+          }
 
-        setPlans(userPlans || []);
-        if (userPlans && userPlans.length > 0) {
-          setSelectedPlan(userPlans[0]);
+          if (isMounted) {
+            setPlans(userPlans);
+            if (userPlans.length > 0) {
+              setSelectedPlan(userPlans[0]);
+            }
+          }
+        } catch (plansError) {
+          console.error("Unexpected plans fetch error:", plansError);
+          if (isMounted) {
+            toast.error("Could not load your plans. Please try again later.");
+          }
         }
       } catch (error) {
-        console.error("Error checking user:", error);
-        toast.error("Failed to load dashboard");
+        console.error("Dashboard error:", error);
+        
+        if (isMounted) {
+          if (error instanceof Error) {
+            setError(error.message);
+            toast.error(`Authentication error: ${error.message}`);
+          } else {
+            setError("An unknown error occurred");
+            toast.error("Failed to load dashboard. Please try logging in again.");
+          }
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkUser();
-  }, [router]);
+
+    // Cleanup function to prevent state updates if the component unmounts
+    return () => {
+      isMounted = false;
+    };
+  }, [router, fetchUserSession, fetchUserPlans]);
 
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { 
@@ -78,10 +185,27 @@ export default function DashboardPage() {
     router.push("/onboarding/form?step=1");
   };
 
+  // Display a loading state
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[80vh]">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // Display error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh] p-6">
+        <div className="text-destructive mb-4">
+          <AlertCircle size={48} />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Something went wrong</h2>
+        <p className="text-muted-foreground text-center mb-6">{error}</p>
+        <Button onClick={() => router.push("/login")}>
+          Back to Login
+        </Button>
       </div>
     );
   }

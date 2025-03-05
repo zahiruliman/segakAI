@@ -44,9 +44,18 @@ SegakAI is a modern web application that uses artificial intelligence to generat
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ```
 
-4. Set up the Supabase database
+4. Set up the Supabase database (choose one method):
+
+   **Method 1: One-Shot Initialization (Recommended)**
+   ```bash
+   npm run init-db
+   ```
+   This script will automatically create all necessary tables, functions, and initial data.
+
+   **Method 2: Manual Setup**
    Run the SQL in `lib/supabase-schema.sql` in your Supabase SQL editor to create the necessary tables and functions.
 
 5. Run the development server
